@@ -7,6 +7,7 @@ using std::string;
 
 #include<fstream>
 using std::fstream;
+using std::ofstream;
 
 #include<cctype>
 
@@ -19,85 +20,113 @@ void put(myList<string>& dict, string str);
 int main() {
     //initializing variables
     myList<string> dict;
+    myList<string> notFound;
+    myList<string> skipped;
     fstream file;
+    ofstream ofile;
     Timer timer;
-    char c;
     string tmp;
 
     double ttc; //Time To Check
-    int tw=0;     //Total Words
+    float tw=0;     //Total Words
     float tnc=0;    //Total Number of Compares
 
-    int wsc=0;    //Words Spelled Correctly
+    float wsc=0;    //Words Spelled Correctly
     float tccw=0;   //Total Compares Correct Words
 
-    int wsw=0;    //Words Spelled Wrong
+    float wsw=0;    //Words Spelled Wrong
     float tcww=0;   //Total Compares Wrong words
 
-    int ws=0;     //words skipped
+    float ws=0;     //words skipped
 
     //average compares=compares/words;
 
     //start loading the dictionary
     //just assume file is there, or ask user for file name/location
     file.open("dict.txt");
-    int i=0;
+int i=0;
     while(!file.eof()) {
         file>>tmp;
         tmp=clean(tmp);
         //insert(dict, tmp);//used for an unordered list
-        put(dict, tmp);
-        i++;
-        if(i%10000==0) {
-            cout<<i<<endl;
-        }
+        dict.put(tmp);
+        i=i+1;
+if(i%10000==0) {
+    cout<<i<<endl;
+}
     }
-    cout<<"Dictionary sort complete size: "<<dict.getSize();
+cout<<"done sorting"<<endl;
     file.close();
 
     //START TIMING
     timer.Start();
     file.open("book.txt");
     //go through the book word by word
+i=0;
     while(!file.eof()) {
         //add one to total number of words
-        tw++;
+        tw=tw+1;
         file>>tmp;
         tmp=clean(tmp);
         //if the word is empty, skip it
         if(tmp.length()==0) {
             //add 1 to words skipped
-            ws++;
+            ws=ws+1;
+skipped.insert(tmp);
             continue;
         }
         //check if word starts with a number, if so skip it
         if((isdigit(tmp[0])!=0)||(tmp[0]=='0')) {
             //add one to the words skipped counter
-            ws++;
+            ws=ws+1;
+skipped.insert(tmp);
             continue;
         }
         int counter=0;
+        //using recursion
+        if(tmp.length()<5) {
+            //Word is in the dictionary
+            //if(dict.findRR(tmp, counter, 4, 10000)) {
+            if(dict.findR(tmp, counter, 5)) {
+                //add the amount of compares to the total compares for correct words
+                tccw+=counter;
+                //add one to the total correct words counter
+                wsc=wsc+1;
+            }
+            //Word is not in dictionary
+            else {
+                //add the amount of compares to the total compares for wrong words
+                tcww+=counter;
+                //add one to the total words spelled wrong counter
+                wsw=wsw+1;
+                //add word to mispelled list
+                notFound.insert(tmp);
+            }
+        }
         //Word is in the dictionary
-        if(dict.find(tmp, counter)) {
+        else if(dict.find(tmp, counter)) {
             //add the amount of compares to the total compares for correct words
             tccw+=counter;
             //add one to the total correct words counter
-            wsc++;
+            wsc=wsc+1;
         }
         //Word is not in dictionary
         else {
             //add the amount of compares to the total compares for wrong words
             tcww+=counter;
             //add one to the total words spelled wrong counter
-            wsw++;
+            wsw=wsw+1;
+            //
+            notFound.insert(tmp);
         }
         //add the amount of compares to the total number of compares counter
         tnc+=counter;
         //reset tmp counter
         counter=0;
-        if(tw%10000==0) {
-            cout<<tw<<endl;
-        }
+if(i%15000==0) {
+cout<<tw<<endl;
+}
+i++;
     }
 
     //for thread use var outside to keep track of how many total
@@ -111,7 +140,26 @@ int main() {
     //STOP TIMING
     timer.Stop();
     ttc=timer.Time();
+    //write mispelled words to file
+    ofile.open("misspelled.txt");
+    while(notFound.getSize()>0) {
+        ofile<<notFound.front()<<"\n";
+        notFound.remove();
+    }
+    ofile.close();
+
     //print and handle outputs
+    cout<<"dictionary size "<<dict.getSize()<<endl
+        <<"Done Checking and these are the results"<<endl
+        <<"finished in time: "<<ttc<<endl
+        <<"There are "<<wsc<<" words found in the dictionary "
+        <<tccw<<" compares. Average: "<<(tccw/wsc)<<endl
+        <<"There are "<<wsw<<" words NOT found in the dictionary "
+        <<tcww<<" compares. Average: "<<(tcww/wsw)<<endl
+        <<"There are "<<ws<<" words not checked."<<endl;
+
+    //my outputs:
+    /*
     cout<<"\n\nTotal Time of Compares: "<<ttc<<endl;
     cout<<"Total Words: "<<tw<<endl;
     cout<<"Total Number of Compares: "<<tnc<<"\n"<<endl;
@@ -119,43 +167,7 @@ int main() {
     cout<<"Total compares of Correct Words: "<<tccw<<"\n"<<endl;
     cout<<"Words Spelled Wrong: "<<wsw<<endl;
     cout<<"Total Compares for Wrong Words: "<<tcww<<endl;
-}
-
-//used to order the list
-void put(myList<string>& dict, string str) {
-    node<string>* n=dict.getHead();
-    node<string>* nprev=nullptr;
-    node<string>* item=new node<string>(str);
-    //if the list is empty, add it as the first item
-    if(n==nullptr) {
-        dict.insert(str);
-        return;
-    }
-    //if the first item in the list is longer than the item
-    //put it in the list
-    if(str.length()<(*n).data.length()) {
-        dict.insert(str);
-        return;
-    }
-    //finds the item that is shorter in length than the word
-    //to put into the list, then puts the item just after it
-    while(str.length()>=(*n).data.length()) {
-        nprev=n;
-        n=(*n).next;
-        //found end of list, add it there
-        if(n==nullptr) {
-            break;
-        }
-    }
-    //if its not the end of the list, put the trailing nodes
-    //onto the item's node, acting as a psuedo head node
-    if(n!=nullptr) {
-        (*item).next=n;
-    }
-    //add the back side of the list of nodes onto this node
-    (*nprev).next=item;
-    dict.upSize();
-    return;
+    */
 }
 
 string clean(string str) {
