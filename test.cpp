@@ -79,7 +79,6 @@ int main() {
     //start loading the dictionary
     //just assume file is there, or ask user for file name/location
     file.open("dict.txt");
-int i=0;
     while(!file.eof()) {
         //word by word pulled from the file
         file>>word;
@@ -88,12 +87,7 @@ int i=0;
         //insert(dict, word);//used for an unordered list
         //add it to the dictionary list, which will auto sort it
         dict.put(word);
-if(i%10000==0) {
-cout<<i<<endl;
-}
-i++;
     }
-cout<<"Dictionary loaded"<<endl;
     //close the file
     file.close();
     //START TIMING
@@ -101,7 +95,6 @@ cout<<"Dictionary loaded"<<endl;
     //open the book
     file.open("book.txt");
     //go through the book word by word
-//myList<string>* list=new myList<string>;//remove when threads
     for(int i=0; !file.eof(); i++) {
         //tmp list to hand off to a thread
         myList<string>* list=new myList<string>;
@@ -137,7 +130,6 @@ cout<<"Dictionary loaded"<<endl;
         //create and start the thread given a list, and the funciton search
         threads.push_back(async(std::launch::async, search, list, i));
     }
-//search(list, 0);
     //wait for the amount of completed threads to equal the amount of threads
     //that exist
     while(threadsDone<threads.size()) {
@@ -173,7 +165,6 @@ cout<<"Dictionary loaded"<<endl;
 
 //Search function each thread calls
 static void search(myList<string>* list, int id) {
-int i=0;
     string word;
     //go through the list
     while((*list).getSize()>0) {
@@ -248,10 +239,6 @@ int i=0;
     locker.lock();
     threadsDone++;
     locker.unlock();
-i++;
-if(i%100000==0) {
-cout<<i<<endl;
-}
 }
 
 //Clean function cleans the string
