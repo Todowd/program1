@@ -6,13 +6,16 @@ using std::cout;
 using std::endl;
 #include "node.h"
 
+#include<string>
+using std::string;
+
 template<class T>
 class myList {
     public:
         //constructor
         myList() {
             head=nullptr;
-            size=-1;
+            size=0;
         };
         //constructor where head starts with node n
         myList(node<T>* n) {
@@ -31,7 +34,7 @@ class myList {
             size++;
             return;
         };
-        //used to order the list
+        //used to order the list from shortest to longest
         void put(string str) {
             node<string>* n=head;
             node<string>* nprev=nullptr;
@@ -64,6 +67,7 @@ class myList {
             }
             //add the back side of the list of nodes onto this node
             (*nprev).next=item;
+            //increase the size
             size++;
             return;
         };
@@ -81,34 +85,39 @@ class myList {
         };
         //prints the list from front to last, or says its empty if its empty
         void print() {
+            //print a nice empty msg
             if(head==nullptr) {
                 cout<<"myList is Empty";
                 return;
             }
+            //go through each node and print it followed by a comma until the end
             node<T>* n=head;
             while((*n).next!=nullptr) {
                 cout<<(*n).data<<", ";
                 n=(*n).next;
             }
+            //add a newline at the end
             cout<<(*n).data<<"\n";
             return;
         };
         //returns true if an item is in the list
         bool find(T item, int& compares) {
+            //use compares passed by reference to add accountance for total compares
             node<T>* n=head;
+            //go through each node, by node and check if the string is there
             while(n!=nullptr) {
+                //a node contains the item being looked for
                 if(item.compare((*n).data)==0) {
-                //if((*n).data==item) {//left here for later code use
+                    //add one to the compares, returns true
+                    compares=compares+1;
+                    //return true
                     return true;
                 }
+                //add one to the compares, did not return true
                 compares=compares+1;
                 n=(*n).next;
             }
             return false;
-        };
-        //recursive find. Returns true if an item is in the list
-        bool findR(T item, int& compares, int length) {
-            return find(head, item, compares, length);
         };
         //returns true if the list is empty
         bool isEmpty() {
@@ -121,20 +130,5 @@ class myList {
     private:
         node<T>* head;
         int size;
-        //private side of the recursive find
-        bool find(node<T>* n, T item, int& compares, int length) {
-            if((*n).next==nullptr) {
-                return false;
-            }
-            else if((*((*n).next)).data.length()>length) {
-                return false;
-            }
-            if(item.compare((*n).data)==0) {
-                compares=compares+1;
-                return true;
-            }
-            compares=compares+1;
-            return find(((*n).next), item, compares, length);
-        }
 };
 #endif

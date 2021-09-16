@@ -1,7 +1,7 @@
 #ifndef NODE_H
 #define NODE_H
 
-//node class for list
+//node struct for list
 template<class T> struct node {
     T data;
     node<T>* next;
