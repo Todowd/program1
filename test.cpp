@@ -53,9 +53,11 @@ int wsw=0;          //Words Spelled Wrong
 
 //array of occurances of words correct encoded by ascii chars
 static int oc[99999999]={0}; //4 char long, initialized all to zero
-
 //array of occurances of words misspelled encoded by ascii chars
 static int ow[99999999]={0}; //4 char long, initialized all to zero
+
+//idea from Kain Randall to make several dictionary lists
+static myList<string> dicts[26];
 
 //cleans up the word
 string clean(string str);
@@ -82,11 +84,18 @@ int main() {
     while(!file.eof()) {
         //word by word pulled from the file
         file>>word;
+        if(file.eof()) {
+            break;
+        }
         //clean the word
         word=clean(word);
-        //insert(dict, word);//used for an unordered list
-        //add it to the dictionary list, which will auto sort it
-        dict.put(word);
+        for(int i=0; i<27; i++) {
+            if(word[0]==((int)'a'+i)) {
+                dicts[i].put(word);
+                break;
+            }
+        }
+        dict.insert(word);
     }
     //close the file
     file.close();
@@ -95,6 +104,7 @@ int main() {
     //open the book
     file.open("book.txt");
     //go through the book word by word
+//myList<string>* list=new myList<string>;//remove when threads
     for(int i=0; !file.eof(); i++) {
         //tmp list to hand off to a thread
         myList<string>* list=new myList<string>;
@@ -130,6 +140,7 @@ int main() {
         //create and start the thread given a list, and the funciton search
         threads.push_back(async(std::launch::async, search, list, i));
     }
+//search(list, 0);
     //wait for the amount of completed threads to equal the amount of threads
     //that exist
     while(threadsDone<threads.size()) {
@@ -171,7 +182,7 @@ static void search(myList<string>* list, int id) {
         //grab the word from the list
         word=(*list).front();
         //word could have already been found
-        if(word.length()<=4) {
+        /*if(word.length()<=4) {
             //get the encoded value
             int asciiword=convert(word);
             //check if its been found already in the book
@@ -195,12 +206,18 @@ static void search(myList<string>* list, int id) {
                 //found it, no need to check anything else with this word
                 continue;
             }
-        }
+        }*/
         //counter of compares
         float counter=0;
+        int index=-1;
+        for(int i=0; i<26; i++) {
+            if(((int)word[0])==((int)'a'+i)) {
+                index=i;
+            }
+        }
         //find returns true if its there, and counter is passed by reference
         //so the counter receives total compares
-        if(dict.find(word, counter)) {
+        if(dicts[index].find(word, counter)) {
             //stop other threads from access anything until unlocked
             locker.lock();
             if(word.length()<=4) {
