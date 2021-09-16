@@ -13,3 +13,4 @@ took a little longer proportionally to the pi
 Help received from:
 https://youtu.be/5HWCsmE9DrE (async, and mutex)
 cplusplus.com (reference on async, mutex, vector, cctype, etc)
+Kain Randall (idea of using array for dictionary)
