@@ -43,7 +43,6 @@ static myList<string> misspelled;
 //used to break the look, while waiting for threads to finish
 static unsigned int threadsDone=0;
 
-//Chunk size for the threads
 const int CHUNK=10000;
 
 float tnc=0;        //Total Number of Compares
@@ -52,10 +51,20 @@ float tcww=0;       //Total Compares Wrong words
 int wsc=0;          //Words Spelled Correctly
 int wsw=0;          //Words Spelled Wrong
 
-string clean(string str);
-//void put(myList<string>& dict, string str);
+//array of occurances of words correct encoded by ascii chars
+static int oc[99999999]={0}; //4 char long, initialized all to zero
 
+//array of occurances of words misspelled encoded by ascii chars
+static int ow[99999999]={0}; //4 char long, initialized all to zero
+
+//cleans up the word
+string clean(string str);
+
+//searches for the word in the dictionary
 static void search(myList<string>* list, int id);
+
+//converts a string to a ascii encoded number
+static int convert(string word);
 
 int main() {
     //initializing variables
@@ -70,6 +79,7 @@ int main() {
     //start loading the dictionary
     //just assume file is there, or ask user for file name/location
     file.open("dict.txt");
+int i=0;
     while(!file.eof()) {
         //word by word pulled from the file
         file>>word;
@@ -78,15 +88,20 @@ int main() {
         //insert(dict, word);//used for an unordered list
         //add it to the dictionary list, which will auto sort it
         dict.put(word);
+if(i%10000==0) {
+cout<<i<<endl;
+}
+i++;
     }
+cout<<"Dictionary loaded"<<endl;
     //close the file
     file.close();
-
     //START TIMING
     timer.Start();
     //open the book
     file.open("book.txt");
     //go through the book word by word
+//myList<string>* list=new myList<string>;//remove when threads
     for(int i=0; !file.eof(); i++) {
         //tmp list to hand off to a thread
         myList<string>* list=new myList<string>;
@@ -100,14 +115,18 @@ int main() {
             word=clean(word);
             //check if word is empty, if so skip it
             if((word.length()==0)) {
+                //keeps thread chunks to their size
                 ii--;
+                //skip to the next word
                 continue;
             }
             //if the word starts with something non alphabetical skip it
             if(isalpha(word[0])==0) {
                 //add 1 to words skipped
                 ws++;
+                //keeps thread chunks to their size
                 ii--;
+                //skip to the next word
                 continue;
             }
             //prevent the eof char from being added to the list
@@ -118,18 +137,12 @@ int main() {
         //create and start the thread given a list, and the funciton search
         threads.push_back(async(std::launch::async, search, list, i));
     }
+//search(list, 0);
     //wait for the amount of completed threads to equal the amount of threads
     //that exist
     while(threadsDone<threads.size()) {
         //do nothing, but wait
     }
-
-    //add array of ints, and use the address as the ascii correllation
-    //to an int, if the int is 0, then it hasnt been seen yes,
-    //and must be looked for in the dictionary, otherwise it has,
-    //add one to that count and move onto the next word, no compares needed.
-    //This would require a funciton that converts the string to the ascii
-    //numbers. Not just individual characters, but a encoding of the entire word
 
     //STOP TIMING
     timer.Stop();
@@ -146,6 +159,7 @@ int main() {
     }
     //close the file
     ofile.close();
+
     //print and handle outputs
     cout<<"dictionary size "<<dict.getSize()<<endl
         <<"Done Checking and these are the results"<<endl
@@ -159,11 +173,38 @@ int main() {
 
 //Search function each thread calls
 static void search(myList<string>* list, int id) {
+int i=0;
     string word;
     //go through the list
     while((*list).getSize()>0) {
         //grab the word from the list
         word=(*list).front();
+        //word could have already been found
+        if(word.length()<=4) {
+            //get the encoded value
+            int asciiword=convert(word);
+            //check if its been found already in the book
+            if(oc[asciiword]>=0) {
+                locker.lock();
+                oc[asciiword]++;
+                wsc++;
+                (*list).remove();
+                locker.unlock();
+                //found it, no need to check anything else with this word
+                continue;
+            }
+            //check if its been misspelled
+            else if(ow[asciiword]>=0) {
+                locker.lock();
+                ow[asciiword]++;
+                misspelled.insert(word);
+                wsw++;
+                (*list).remove();
+                locker.unlock();
+                //found it, no need to check anything else with this word
+                continue;
+            }
+        }
         //counter of compares
         float counter=0;
         //find returns true if its there, and counter is passed by reference
@@ -171,6 +212,9 @@ static void search(myList<string>* list, int id) {
         if(dict.find(word, counter)) {
             //stop other threads from access anything until unlocked
             locker.lock();
+            if(word.length()<=4) {
+                oc[convert(word)]++;
+            }
             //add the amount of compares to the total compares for correct words
             tccw+=counter;
             //add one to the total correct words counter
@@ -180,6 +224,9 @@ static void search(myList<string>* list, int id) {
         else {
             //stop other threads from access anything until unlocked
             locker.lock();
+            if(word.length()<=4) {
+                oc[convert(word)]++;
+            }
             //add the amount of compares to the total compares for wrong words
             tcww+=counter;
             //add one to the total words spelled wrong counter
@@ -195,11 +242,16 @@ static void search(myList<string>* list, int id) {
         counter=0;
         //remove the word from the list
         (*list).remove();
+
     }
     //once complete, this thread is done, add one to the thread done counter
     locker.lock();
     threadsDone++;
     locker.unlock();
+i++;
+if(i%100000==0) {
+cout<<i<<endl;
+}
 }
 
 //Clean function cleans the string
@@ -238,4 +290,31 @@ string clean(string str) {
     }
     //return the cleaned string
     return str;
+}
+
+static int convert(string word) {
+    unsigned int val=0;
+    for(unsigned int i=0; i<word.length(); i++) {
+        unsigned int tmpval;
+        char c=word[i];
+        tmpval=(int)c;
+        for(unsigned int ii=0; ii<i; ii++) {
+            tmpval*=100;
+        }
+        val+=tmpval;
+    }
+    switch(word.length()) {
+        case 1:
+            val*=1000000;//move three chars over
+            break;
+        case 2:
+            val*=10000;//move two chars over
+            break;
+        case 3:
+            val*=100;//move one char over
+        default:
+            //4 chars long, ignore
+            break;
+    }
+    return val;
 }
