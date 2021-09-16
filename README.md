@@ -7,7 +7,7 @@ COSC 2030
 Competing: YES
 
 Best run time:
-43.7359 Seconds on the Hive
+61.7389 Seconds on the Pi
 Anything that doesn't work:
 took a little longer proportionally to the pi
 Help received from:
