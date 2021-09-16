@@ -43,14 +43,14 @@ static myList<string> misspelled;
 //used to break the look, while waiting for threads to finish
 static unsigned int threadsDone=0;
 
-//Chunk size for the threads
-const int CHUNK=10000;
-
 float tnc=0;        //Total Number of Compares
 float tccw=0;       //Total Compares Correct Words
 float tcww=0;       //Total Compares Wrong words
 int wsc=0;          //Words Spelled Correctly
 int wsw=0;          //Words Spelled Wrong
+
+//chunk size for the threads
+const int CHUNK=50000;
 
 string clean(string str);
 //void put(myList<string>& dict, string str);
