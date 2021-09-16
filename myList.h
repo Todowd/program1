@@ -101,7 +101,7 @@ class myList {
             return;
         };
         //returns true if an item is in the list
-        bool find(T item, int& compares) {
+        bool find(T item, float& compares) {
             //use compares passed by reference to add accountance for total compares
             node<T>* n=head;
             //go through each node, by node and check if the string is there

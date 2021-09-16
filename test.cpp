@@ -41,7 +41,7 @@ static myList<string> dict;
 //list of words spelled wrong
 static myList<string> misspelled;
 //used to break the look, while waiting for threads to finish
-static int threadsDone=0;
+static unsigned int threadsDone=0;
 
 float tnc=0;        //Total Number of Compares
 float tccw=0;       //Total Compares Correct Words
